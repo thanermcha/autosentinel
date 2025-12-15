@@ -1,0 +1,14 @@
+# Logs e relatórios gerados
+logs/
+*.pcap
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Ambientes virtuais
+.venv/
+env/
+
