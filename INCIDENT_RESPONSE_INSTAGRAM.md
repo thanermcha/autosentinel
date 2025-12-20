@@ -34,6 +34,27 @@ Este guia é **defensivo** e focado em **recuperação** e **investigação** no
 
 > Se você tiver e‑mail do Instagram sobre troca de e‑mail/senha, **salve** esses e‑mails (e cabeçalhos, se possível).
 
+### 1.2.1 Se você suspeita de roteamento/encaminhamento de e‑mail (Cloudflare Email Routing)
+
+Se o “reset de senha” não chega ou você suspeita que o atacante está interceptando e‑mails:
+
+- Verifique no provedor do e‑mail (Gmail/Outlook/etc.):
+  - **Regras/Filtros** (encaminhando mensagens do Instagram/Meta para outro destino)
+  - **Encaminhamento** habilitado
+  - **Apps conectados** / permissões OAuth suspeitas
+  - **Sessões/dispositivos logados** e encerramento de sessões desconhecidas
+
+Se você usa **domínio próprio** com Cloudflare:
+
+- No Cloudflare, revise:
+  - **Email Routing** (endereços e destinos de encaminhamento)
+  - **Registros DNS de e‑mail**:
+    - MX (para onde o domínio envia e‑mails)
+    - SPF / DKIM / DMARC (postura anti-spoofing)
+- Objetivo: garantir que o e‑mail de recuperação do Instagram **não esteja indo para uma caixa que você não controla**.
+
+> Dica: se você fez mudanças recentes em DNS/roteamento, pode haver atraso de propagação, mas “sumir do Business Manager” costuma apontar mais para **tomada de conta/permissões** do que apenas DNS.
+
 ### 1.3 Trave o resto (reduz efeito dominó)
 
 - Troque senhas de contas com **mesma senha** do Instagram (se existir)
