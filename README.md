@@ -119,12 +119,31 @@ Siga exatamente os mesmos passos descritos na seção **Instalação no Linux**.
 sudo python3 AutoSentinel.py
 ```
 
+### Modo pró-ativo (mitigação e forense)
+
+Por padrão, o AutoSentinel é conservador: ele **coleta evidências** e registra incidentes, mas **não altera firewall**.
+
+- **Ativar mitigação automática em modo seguro (dry-run)**:
+
+```bash
+sudo python3 AutoSentinel.py --auto-mitigate --dry-run
+```
+
+- **Ativar mitigação automática de verdade (cuidado)**:
+
+```bash
+sudo python3 AutoSentinel.py --auto-mitigate --block-method ufw
+```
+
+> Recomendação: comece com `--dry-run` por alguns dias e ajuste a política antes de aplicar bloqueios reais.
+
 ### O que acontece durante a execução?
 
 1. 🔍 Varredura da rede local (Nmap)
-2. 👁️ Monitoramento contínuo de conexões
+2. 👁️ Monitoramento contínuo de conexões **e processos** (quando possível via PID)
 3. 🚨 Alertas em tempo real
-4. 📄 Geração automática de relatórios
+4. 🧾 Enriquecimento de tráfego (DNS / TLS SNI / HTTP Host)
+5. 📄 Geração automática de relatórios
 
 Pressione **CTRL + C** para encerrar e gerar os arquivos finais.
 
@@ -145,9 +164,29 @@ Os resultados são salvos na pasta `logs/`:
 * Dados completos de análise
 * Ideal para integrações futuras
 
+### 🧾 Metadados de Tráfego (`_meta.jsonl`)
+
+* Arquivo **JSONL** (1 evento por linha) com metadados úteis para identificar tráfego:
+  * DNS (consultas)
+  * TLS SNI (quando disponível)
+  * HTTP Host/URI (quando disponível)
+* Útil para triagem rápida (grep/jq) sem abrir o Wireshark
+
 ### 📡 Captura de Tráfego (`.pcap`)
 
 * Pode ser analisado no **Wireshark**
+
+### 📁 Incidentes (forense + ações)
+
+Quando um alerta é disparado, o AutoSentinel cria uma pasta em:
+
+* `logs/incidents/<incident_id>/`
+
+Ela pode conter:
+
+* `incident.json` (alerta + ações executadas/planejadas)
+* `ss_*.txt`, `ps_aux.txt`, `ip_*.txt`, `journalctl_5m.txt` (snapshots locais)
+* `mitigation.json` (comandos executados ou simulados)
 
 ---
 

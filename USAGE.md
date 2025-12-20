@@ -12,6 +12,42 @@ O AutoSentinel foi projetado para **Linux (Debian/Ubuntu)** e **requer privilég
 sudo python3 AutoSentinel.py
 ```
 
+## Execução Pró-ativa (mitigação, baseline e forense)
+
+O AutoSentinel pode registrar incidentes e (opcionalmente) aplicar mitigação local (bloqueio de IP) **no host onde ele está rodando**.
+
+> ✅ Uso defensivo e autorizado.  
+> ⚠️ O AutoSentinel **não é ferramenta de retaliação** e não deve ser usado para “escanear invasores” na internet.
+
+### 1) Dry-run (recomendado)
+
+Simula bloqueios (registra comandos) sem alterar firewall:
+
+```bash
+sudo python3 AutoSentinel.py --auto-mitigate --dry-run
+```
+
+### 2) Aplicando bloqueios reais (cuidado)
+
+```bash
+sudo python3 AutoSentinel.py --auto-mitigate --block-method ufw
+```
+
+Artefatos e evidências ficam em:
+
+```text
+logs/incidents/<incident_id>/
+```
+
+### 3) Baseline / Diff (o que mudou entre sessões)
+
+```bash
+# Atualiza baseline ao final da sessão
+sudo python3 AutoSentinel.py --update-baseline
+```
+
+Na próxima execução, o relatório final mostra **novos processos**, **novos IPs remotos** e **novos domínios** (quando observáveis).
+
 > ⚠️ **Importante**
 >
 > * Execute sempre com `sudo`
@@ -86,6 +122,38 @@ logs/sentinela_rede_<timestamp>.pcap
 
 ---
 
+### 3️⃣.1 Enriquecimento de Tráfego (Metadados: DNS / TLS SNI / HTTP Host)
+
+Além do `.pcap`, o AutoSentinel tenta gerar um arquivo de **eventos de metadados** (formato **JSONL**: 1 JSON por linha) para facilitar a identificação de tráfego sem abrir o Wireshark:
+
+```text
+logs/sentinela_rede_<timestamp>_meta.jsonl
+```
+
+O que ele captura (best-effort, sem payload):
+
+* Consultas DNS (`dns.qry.name`)
+* SNI de TLS (quando presente) (`tls.handshake.extensions_server_name`)
+* Host/URI de HTTP (quando presente) (`http.host`, `http.request.uri`)
+
+> ⚠️ Observação importante: em **Wi‑Fi comum**, sem espelhamento de porta (SPAN) / monitor mode, normalmente você verá **principalmente o tráfego do próprio computador** onde o script está rodando.
+
+Exemplos rápidos de triagem:
+
+```bash
+# Ver os 50 últimos eventos
+tail -n 50 logs/sentinela_rede_*_meta.jsonl
+
+# Filtrar por um domínio (DNS/SNI/HTTP Host)
+grep -i "google" logs/sentinela_rede_*_meta.jsonl | head
+
+# Se tiver jq instalado: top hosts (simples)
+jq -r '.dns_qry_name // .tls_sni // .http_host // empty' logs/sentinela_rede_*_meta.jsonl \
+  | sort | uniq -c | sort -nr | head -n 25
+```
+
+---
+
 ### 4️⃣ Monitoramento em Tempo Real (IDS Heurístico)
 
 Enquanto o script está ativo, o AutoSentinel monitora:
@@ -94,6 +162,7 @@ Enquanto o script está ativo, o AutoSentinel monitora:
 * IPs remotos acessados
 * Portas distintas utilizadas
 * Volume de conexões por IP
+* **Processos responsáveis** (quando disponível via PID)
 
 #### Heurística de Alerta
 
@@ -146,6 +215,12 @@ Ideal para:
 * Integração com SIEM
 * Dashboards
 * Análise posterior automatizada
+
+Também inclui dados de enriquecimento, como:
+
+* Top processos por conexões observadas (host local)
+* Top domínios/hosts observados via metadados (DNS/SNI/HTTP)
+* Mapeamento IP → domínios (quando possível)
 
 ---
 
