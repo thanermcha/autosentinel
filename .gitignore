@@ -12,3 +12,8 @@ __pycache__/
 .venv/
 env/
 
+# Rascunhos / duplicados locais
+readme.md
+feedback-readme.md
+PlusAutoSentinel.py
+
