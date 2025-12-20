@@ -51,6 +51,7 @@ O **Auto Sentinel Network** atua exatamente nesses pontos, oferecendo **duas cam
 * [🚀 Como Executar](#-como-executar)
 * [📊 Análise dos Resultados](#-análise-dos-resultados)
 * [📄 Logs e Relatórios](#-logs-e-relatórios)
+* [🆕 Notas de Atualização (Changelog)](CHANGELOG.md)
 * [⚠️ Avisos Importantes](#️-avisos-importantes)
 * [✅ Conclusão](#-conclusão)
 
