@@ -74,6 +74,10 @@ class AutoNetworkSentinel:
         self.ip_rdns_cache: Dict[str, Optional[str]] = {} # Cache para rDNS
         self.conn_last_seen: Dict[Tuple, float] = {}
 
+        # Compatibilidade: versões antigas usavam ip_conn_count (agora é split em samples/unique)
+        # Mantemos um alias para evitar crash de código/relatórios que ainda referenciem o nome antigo.
+        self.ip_conn_count = self.ip_conn_samples
+
         # Enriquecimento: atribuição por processo (host local)
         self.pid_cache: Dict[int, Dict[str, Optional[str]]] = {}
         self.process_conn_count: Counter[str] = Counter()
@@ -886,7 +890,7 @@ class AutoNetworkSentinel:
             f.write("\n### Destinos Enriquecidos (IP → domínios)\n\n")
             if self.remote_ip_domain_count:
                 # Ordena IPs por volume de conexões (psutil), e mostra os top domínios por IP (tshark)
-                top_ips = sorted(self.ip_conn_count.items(), key=lambda x: x[1], reverse=True)[:10]
+                top_ips = sorted(self.ip_conn_unique.items(), key=lambda x: x[1], reverse=True)[:10]
                 for ip, conn_cnt in top_ips:
                     domains_top = self.remote_ip_domain_count.get(ip)
                     if not domains_top:
@@ -985,7 +989,7 @@ def snapshot_baseline(s: AutoNetworkSentinel) -> Dict:
         "time": datetime.now().isoformat(),
         "top_processes": [p for p, _ in s.process_conn_count.most_common(50)],
         "top_domains": [d for d, _ in s.domain_count.most_common(200)],
-        "top_remote_ips": [ip for ip, _ in sorted(s.ip_conn_count.items(), key=lambda x: x[1], reverse=True)[:200]],
+        "top_remote_ips": [ip for ip, _ in sorted(s.ip_conn_unique.items(), key=lambda x: x[1], reverse=True)[:200]],
     }
 
 def diff_baseline(current: Dict, baseline: Optional[Dict]) -> Dict:
