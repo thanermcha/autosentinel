@@ -52,6 +52,7 @@ O **Auto Sentinel Network** atua exatamente nesses pontos, oferecendo **duas cam
 * [📊 Análise dos Resultados](#-análise-dos-resultados)
 * [📄 Logs e Relatórios](#-logs-e-relatórios)
 * [🆕 Notas de Atualização (Changelog)](CHANGELOG.md)
+* [🧭 Playbook — Incidente (Instagram / contas)](INCIDENT_RESPONSE_INSTAGRAM.md)
 * [⚠️ Avisos Importantes](#️-avisos-importantes)
 * [✅ Conclusão](#-conclusão)
 
