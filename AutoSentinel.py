@@ -87,6 +87,7 @@ class AutoNetworkSentinel:
 
         # Enriquecimento: domínios/hosts (DNS / TLS SNI / HTTP Host)
         self.domain_count: Counter[str] = Counter()
+        self.dns_query_count: Counter[str] = Counter()
         self.remote_ip_domains: Dict[str, Set[str]] = defaultdict(set)
         self.remote_ip_domain_count: Dict[str, Counter[str]] = defaultdict(Counter)
         self.meta_events_path = LOG_DIR / f"sentinela_rede_{ts}_meta.jsonl"
@@ -571,16 +572,21 @@ class AutoNetworkSentinel:
                 dst_ip = rec.get("ip.dst") or rec.get("ipv6.dst") or ""
 
                 # Extrai "domínio" (melhor esforço)
-                domain = (
-                    (rec.get("dns.qry.name") or "").strip()
-                    or (rec.get("tls.handshake.extensions_server_name") or "").strip()
-                    or (rec.get("http.host") or "").strip()
-                )
-                if domain:
-                    self.domain_count[domain] += 1
+                dns_q = (rec.get("dns.qry.name") or "").strip()
+                tls_sni = (rec.get("tls.handshake.extensions_server_name") or "").strip()
+                http_host = (rec.get("http.host") or "").strip()
+
+                # DNS: o destino normalmente é o resolvedor (ex.: 1.1.1.1), então NÃO mapeamos IP→domínio aqui.
+                if dns_q:
+                    self.dns_query_count[dns_q] += 1
+
+                # SNI/HTTP: aqui sim o dst_ip costuma ser o servidor real, então mapeamos IP→domínio.
+                host_domain = tls_sni or http_host
+                if host_domain:
+                    self.domain_count[host_domain] += 1
                     if dst_ip:
-                        self.remote_ip_domains[dst_ip].add(domain)
-                        self.remote_ip_domain_count[dst_ip][domain] += 1
+                        self.remote_ip_domains[dst_ip].add(host_domain)
+                        self.remote_ip_domain_count[dst_ip][host_domain] += 1
 
                 # Persistência (JSONL) — útil pra triagem rápida sem abrir o pcap
                 try:
@@ -815,7 +821,8 @@ class AutoNetworkSentinel:
             "ip_stats": ip_stats_with_rdns, # Otimizado com rDNS
             "traffic_enrichment": {
                 "meta_events_jsonl": str(self.meta_events_path) if self.meta_events_path.exists() else None,
-                "top_domains": self.domain_count.most_common(50),
+                "top_hosts": self.domain_count.most_common(50),
+                "top_dns_queries": self.dns_query_count.most_common(50),
                 "remote_ip_domains": {ip: sorted(list(domains)) for ip, domains in self.remote_ip_domains.items()},
                 "remote_ip_domain_top": {
                     ip: cnt.most_common(10) for ip, cnt in self.remote_ip_domain_count.items()
@@ -880,8 +887,12 @@ class AutoNetworkSentinel:
 
             f.write("\n### Enriquecimento de Tráfego (DNS / TLS SNI / HTTP Host)\n\n")
             if self.domain_count:
-                f.write("- **Top domínios observados** (contagem aproximada de eventos):\n")
+                f.write("- **Top hosts (TLS SNI / HTTP Host)** (contagem aproximada de eventos):\n")
                 for dom, cnt in self.domain_count.most_common(25):
+                    f.write(f"  - `{dom}`: {cnt}\n")
+            if self.dns_query_count:
+                f.write("\n- **Top consultas DNS** (contagem aproximada):\n")
+                for dom, cnt in self.dns_query_count.most_common(25):
                     f.write(f"  - `{dom}`: {cnt}\n")
             else:
                 f.write("- Nenhum domínio/host foi observado via metadados (DNS/SNI/HTTP).\\\n")
